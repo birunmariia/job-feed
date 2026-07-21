@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Job Feed — личный поиск вакансий</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1c2621;
+    --paper:#f2f1eb;
+    --card:#faf9f5;
+    --pine:#2f4f3e;
+    --pine-soft:#dde7e1;
+    --ochre:#b9812f;
+    --ochre-soft:#f2e3c8;
+    --line:#d8d5c9;
+    --muted:#6b7268;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  header{
+    padding:48px 24px 28px;
+    max-width:920px;
+    margin:0 auto;
+    border-bottom:1px solid var(--line);
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--pine);
+    margin-bottom:10px;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:clamp(28px,4vw,42px);
+    margin:0 0 8px;
+    letter-spacing:-0.01em;
+  }
+  .sub{
+    color:var(--muted);
+    font-size:15px;
+    max-width:56ch;
+    line-height:1.5;
+  }
+  .toolbar{
+    max-width:920px;
+    margin:24px auto 0;
+    padding:0 24px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+  }
+  input[type="text"]{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:14px;
+    padding:10px 14px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:var(--card);
+    flex:1 1 220px;
+    min-width:180px;
+  }
+  .chip{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    padding:8px 12px;
+    border-radius:20px;
+    border:1px solid var(--line);
+    background:var(--card);
+    cursor:pointer;
+    user-select:none;
+    color:var(--muted);
+    transition:all .15s ease;
+  }
+  .chip.active{
+    background:var(--pine);
+    border-color:var(--pine);
+    color:#fff;
+  }
+  select{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    padding:9px 10px;
+    border-radius:6px;
+    border:1px solid var(--line);
+    background:var(--card);
+    color:var(--ink);
+  }
+  main{
+    max-width:920px;
+    margin:32px auto 80px;
+    padding:0 24px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .status{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    color:var(--muted);
+    padding:20px 0;
+  }
+  .job{
+    position:relative;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:20px 22px 18px;
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:8px 16px;
+  }
+  .job::before{
+    content:"";
+    position:absolute;
+    left:0; top:14px; bottom:14px;
+    width:2px;
+    background:repeating-linear-gradient(to bottom, var(--line) 0 6px, transparent 6px 12px);
+  }
+  .job-title{
+    font-family:'Fraunces', serif;
+    font-size:19px;
+    font-weight:500;
+    margin:0;
+    line-height:1.3;
+  }
+  .job-title a{ color:var(--ink); text-decoration:none; }
+  .job-title a:hover{ color:var(--pine); text-decoration:underline; }
+  .job-company{
+    font-size:14px;
+    color:var(--muted);
+    margin-top:2px;
+  }
+  .job-meta{
+    grid-column:1 / -1;
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top:10px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+  }
+  .tag{
+    padding:3px 9px;
+    border-radius:20px;
+    background:var(--pine-soft);
+    color:var(--pine);
+  }
+  .tag.new{ background:var(--ochre-soft); color:var(--ochre); }
+  .tag.dim{ background:transparent; border:1px solid var(--line); color:var(--muted); }
+  .score{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--muted);
+    text-align:right;
+    white-space:nowrap;
+  }
+  footer{
+    max-width:920px;
+    margin:0 auto 60px;
+    padding:0 24px;
+    font-size:12px;
+    color:var(--muted);
+    line-height:1.6;
+  }
+  footer a{ color:var(--pine); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Личный агрегатор вакансий</div>
+  <h1>Job Feed</h1>
+  <p class="sub">Собирается автоматически раз в день из RemoteOK, Remotive, Himalayas и Working Nomads,
+    отфильтровано под твои роли и индустрии.</p>
+</header>
+
+<div class="toolbar">
+  <input type="text" id="search" placeholder="Поиск по названию, компании…" />
+  <button class="chip" data-filter="new">Только новые</button>
+  <button class="chip" data-filter="industry">Индустрия совпала</button>
+  <button class="chip" data-filter="timezone">Таймзона совпала</button>
+  <select id="sort">
+    <option value="score">Сортировка: по релевантности</option>
+    <option value="date">Сортировка: по дате публикации</option>
+  </select>
+</div>
+
+<main id="jobs">
+  <div class="status">Загружаю вакансии…</div>
+</main>
+
+<footer>
+  Данные предоставлены <a href="https://remoteok.com" target="_blank">RemoteOK</a>,
+  <a href="https://remotive.com" target="_blank">Remotive</a>,
+  <a href="https://himalayas.app" target="_blank">Himalayas</a> и
+  <a href="https://www.workingnomads.co" target="_blank">Working Nomads</a>.
+  Переходи по ссылке вакансии, чтобы откликнуться на оригинальном сайте.
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+  // Замени на свои значения из Supabase → Project Settings → API
+  const SUPABASE_URL = "YOUR_SUPABASE_URL";
+  const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const state = { jobs: [], filters: new Set(), search: "", sort: "score" };
+
+  async function loadJobs() {
+    const { data, error } = await supabase
+      .from("jobs")
+      .select("*")
+      .order("score", { ascending: false })
+      .limit(300);
+
+    const container = document.getElementById("jobs");
+    if (error) {
+      container.innerHTML = `<div class="status">Ошибка загрузки: ${error.message}</div>`;
+      return;
+    }
+    state.jobs = data || [];
+    render();
+  }
+
+  function render() {
+    const container = document.getElementById("jobs");
+    let list = state.jobs.filter((j) => {
+      if (state.search) {
+        const hay = `${j.title} ${j.company}`.toLowerCase();
+        if (!hay.includes(state.search.toLowerCase())) return false;
+      }
+      if (state.filters.has("new") && !j.is_new) return false;
+      if (state.filters.has("industry") && !j.industry_match) return false;
+      if (state.filters.has("timezone") && !j.timezone_match) return false;
+      return true;
+    });
+
+    if (state.sort === "date") {
+      list.sort((a, b) => new Date(b.published_at || 0) - new Date(a.published_at || 0));
+    } else {
+      list.sort((a, b) => b.score - a.score);
+    }
+
+    if (list.length === 0) {
+      container.innerHTML = `<div class="status">Ничего не найдено под текущие фильтры.</div>`;
+      return;
+    }
+
+    container.innerHTML = list.map(jobCard).join("");
+  }
+
+  function jobCard(j) {
+    const tags = [];
+    if (j.is_new) tags.push(`<span class="tag new">новое</span>`);
+    if (j.industry_match) tags.push(`<span class="tag">индустрия ✓</span>`);
+    if (j.timezone_match) tags.push(`<span class="tag">таймзона ✓</span>`);
+    if (j.salary_ok === true) tags.push(`<span class="tag">зарплата ✓</span>`);
+    tags.push(`<span class="tag dim">${j.source}</span>`);
+    if (j.location) tags.push(`<span class="tag dim">${escapeHtml(j.location)}</span>`);
+
+    return `
+      <div class="job">
+        <div>
+          <p class="job-title"><a href="${j.url}" target="_blank" rel="noopener">${escapeHtml(j.title)}</a></p>
+          <div class="job-company">${escapeHtml(j.company || "")}</div>
+        </div>
+        <div class="score">скор ${j.score}</div>
+        <div class="job-meta">${tags.join("")}</div>
+      </div>
+    `;
+  }
+
+  function escapeHtml(str) {
+    return (str || "").replace(/[&<>"']/g, (m) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    }[m]));
+  }
+
+  document.getElementById("search").addEventListener("input", (e) => {
+    state.search = e.target.value;
+    render();
+  });
+
+  document.getElementById("sort").addEventListener("change", (e) => {
+    state.sort = e.target.value;
+    render();
+  });
+
+  document.querySelectorAll(".chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const f = chip.dataset.filter;
+      if (state.filters.has(f)) {
+        state.filters.delete(f);
+        chip.classList.remove("active");
+      } else {
+        state.filters.add(f);
+        chip.classList.add("active");
+      }
+      render();
+    });
+  });
+
+  loadJobs();
+</script>
+
+</body>
+</html>

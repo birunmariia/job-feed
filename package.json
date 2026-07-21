@@ -1,0 +1,15 @@
+{
+  "name": "job-finder",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "fetch": "node scripts/run.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
