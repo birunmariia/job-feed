@@ -1,8 +1,9 @@
 # Job Feed — личный агрегатор вакансий
 
 Что это: код сам, раз в день, забирает вакансии с RemoteOK, Remotive, Himalayas,
-Working Nomads, а также с бордов Greenhouse и Lever выбранных тобой компаний
-(см. `lib/companies.mjs`), отфильтровывает по твоим критериям
+Working Nomads, с бордов Greenhouse и Lever выбранных тобой компаний
+(см. `lib/companies.mjs`), а также (если подключишь бесплатные ключи, см.
+шаг 5) с агрегаторов Jooble и Adzuna — отфильтровывает по твоим критериям
 (см. `lib/criteria.mjs`) и сохраняет в базу. Отдельная страница показывает
 результат с фильтрами.
 
@@ -45,8 +46,29 @@ Working Nomads, а также с бордов Greenhouse и Lever выбранн
    запустить вручную: вкладка **Actions** → **Daily job fetch** → **Run workflow**
    (удобно, чтобы проверить сразу, не дожидаясь завтрашнего дня).
 
-### Шаг 5. Вставить свои ключи в сайт
-1. Открой файл `site/index.html` в этом репозитории (можно прямо на GitHub —
+### Шаг 5. (Опционально, но сильно увеличивает число вакансий) Подключить Jooble и Adzuna
+RemoteOK/Remotive/Himalayas/Working Nomads и Greenhouse/Lever по отдельным
+компаниям дают немного вакансий — это "длинный хвост". Jooble и Adzuna —
+настоящие агрегаторы, дают на порядок больше. Оба требуют бесплатной
+регистрации:
+1. **Jooble**: зайди на https://jooble.org/api/about, зарегистрируйся,
+   получи API-ключ.
+2. **Adzuna**: зайди на https://developer.adzuna.com, зарегистрируйся,
+   создай приложение — получишь `app_id` и `app_key`.
+3. В репозитории: **Settings** → **Secrets and variables** → **Actions** →
+   **New repository secret**, добавь:
+   - `JOOBLE_API_KEY`
+   - `ADZUNA_APP_ID`
+   - `ADZUNA_APP_KEY`
+4. Если какой-то из ключей не задать — соответствующий источник просто
+   тихо пропустится (в логе Actions будет пометка, остальные источники
+   продолжат работать).
+5. У Adzuna бесплатный тариф ограничен по числу запросов в день/месяц —
+   если начнёт не хватать лимита, сократи список стран или ролей в
+   `ADZUNA_COUNTRIES` / `criteria.roles` (константа в `lib/sources.mjs`).
+
+### Шаг 6. Вставить свои ключи в сайт
+1. Открой файл `docs/index.html` в этом репозитории (можно прямо на GitHub —
    нажми на файл → карандаш "Edit").
 2. Найди строки:
    ```js
@@ -58,11 +80,9 @@ Working Nomads, а также с бордов Greenhouse и Lever выбранн
    доступ только на чтение).
 4. Сохрани (Commit changes).
 
-### Шаг 6. Включить GitHub Pages, чтобы страница была доступна по ссылке
+### Шаг 7. Включить GitHub Pages, чтобы страница была доступна по ссылке
 1. В репозитории: **Settings** → **Pages**.
-2. Source: **Deploy from a branch**. Branch: `main`, папка: `/site`.
-   Если GitHub не даёт выбрать `/site` — переименуй папку `site` в `docs`
-   и укажи `/docs` (тогда поправь и путь при загрузке в шаге 2, не критично).
+2. Source: **Deploy from a branch**. Branch: `main`, папка: `/docs`.
 3. Сохрани. Через минуту-две GitHub покажет ссылку вида
    `https://твой-логин.github.io/job-feed/` — это и есть твоя страница.
 
@@ -72,7 +92,8 @@ Working Nomads, а также с бордов Greenhouse и Lever выбранн
 
 Ничего делать не нужно. Раз в день код сам:
 1. Сходит на сайты с вакансиями (RemoteOK, Remotive, Himalayas, Working
-   Nomads) и на борды Greenhouse/Lever компаний из `lib/companies.mjs`.
+   Nomads), на борды Greenhouse/Lever компаний из `lib/companies.mjs`, и
+   если подключены ключи — на Jooble и Adzuna.
 2. Отфильтрует по ролям/индустриям/опыту/таймзонам/зарплате из
    `lib/criteria.mjs`.
 3. Сохранит новые вакансии в базу, пометит их как "новое".
