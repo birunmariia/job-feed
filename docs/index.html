@@ -143,6 +143,12 @@
     color:var(--muted);
     margin-top:2px;
   }
+  .job-alt{
+    font-size:12px;
+    margin-top:4px;
+  }
+  .job-alt a{ color:var(--muted); text-decoration:none; }
+  .job-alt a:hover{ color:var(--pine); text-decoration:underline; }
   .job-meta{
     grid-column:1 / -1;
     display:flex;
@@ -276,11 +282,20 @@
         <div>
           <p class="job-title"><a href="${j.url}" target="_blank" rel="noopener">${escapeHtml(j.title)}</a></p>
           <div class="job-company">${escapeHtml(j.company || "")}</div>
+          <div class="job-alt"><a href="${altSearchUrl(j)}" target="_blank" rel="noopener">найти оригинал ↗</a></div>
         </div>
         <div class="score">скор ${j.score}</div>
         <div class="job-meta">${tags.join("")}</div>
       </div>
     `;
+  }
+
+  // Запасная ссылка: поиск этой же вакансии по названию + компании.
+  // Нужна, когда оригинальная ссылка заблокирована по региону (частый
+  // случай у Adzuna: UK/AU вакансия не открывается из другого региона).
+  function altSearchUrl(j) {
+    const q = [j.title, j.company].filter(Boolean).join(" ");
+    return `https://www.google.com/search?q=${encodeURIComponent(q)}`;
   }
 
   function escapeHtml(str) {
