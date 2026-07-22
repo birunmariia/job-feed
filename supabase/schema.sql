@@ -20,12 +20,18 @@ create table if not exists jobs (
   score numeric default 0,
   published_at timestamptz,
   first_seen_at timestamptz not null default now(),
+  last_seen_at timestamptz not null default now(),
   is_new boolean default true,
   unique (source, source_id)
 );
 
 create index if not exists jobs_score_idx on jobs (score desc);
 create index if not exists jobs_first_seen_idx on jobs (first_seen_at desc);
+create index if not exists jobs_last_seen_idx on jobs (last_seen_at desc);
+
+-- Если таблица jobs уже создана РАНЬШЕ (без колонки last_seen_at) — выполни
+-- один раз этот ALTER в SQL Editor, иначе сбор будет падать с ошибкой:
+--   alter table jobs add column if not exists last_seen_at timestamptz not null default now();
 
 -- Включаем Row Level Security и разрешаем анонимное ЧТЕНИЕ (без ключа),
 -- запись остаётся закрытой для анонимов — писать сможет только скрипт
