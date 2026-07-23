@@ -179,6 +179,27 @@
     text-align:right;
     white-space:nowrap;
   }
+  .job-right{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:8px;
+  }
+  .job-x{
+    border:1px solid var(--line);
+    background:transparent;
+    color:var(--muted);
+    width:24px; height:24px;
+    border-radius:50%;
+    font-size:13px;
+    line-height:1;
+    cursor:pointer;
+    padding:0;
+  }
+  .job-x:hover{ border-color:var(--ochre); color:var(--ochre); }
+  /* Помеченная как "не подходит" — приглушена и зачёркнута, но остаётся в списке */
+  .job.dismissed{ opacity:0.45; }
+  .job.dismissed .job-title a{ text-decoration:line-through; }
   footer{
     max-width:920px;
     margin:0 auto 60px;
@@ -235,7 +256,23 @@
   const SUPABASE_ANON_KEY = "sb_publishable_E3rIRFIQeJsels6fdU0NOg_vjE26HTf";
 
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const state = { jobs: [], filters: new Set(), search: "", sort: "score" };
+
+  // Вакансии, помеченные как "не подходит", хранятся только в этом браузере
+  // (localStorage) — база остаётся доступной лишь на чтение, поэтому пометки
+  // не пишутся на сервер и видны только тебе.
+  const DISMISS_KEY = "dismissedJobs";
+  const state = {
+    jobs: [],
+    filters: new Set(),
+    search: "",
+    sort: "score",
+    dismissed: new Set(JSON.parse(localStorage.getItem(DISMISS_KEY) || "[]")),
+  };
+
+  // Стабильный ключ вакансии (source_id может быть числом, guid или даже URL)
+  function jobKey(j) {
+    return `${j.source}:${j.source_id}`;
+  }
 
   async function loadJobs() {
     const { data, error } = await sb
@@ -296,14 +333,22 @@
     tags.push(`<span class="tag dim">${j.source}</span>`);
     if (j.location) tags.push(`<span class="tag dim">${escapeHtml(j.location)}</span>`);
 
+    const key = escapeHtml(jobKey(j));
+    const isDismissed = state.dismissed.has(jobKey(j));
+    const xTitle = isDismissed ? "Вернуть (подходит)" : "Отметить как не подходит";
+    const xLabel = isDismissed ? "↩" : "✕";
+
     return `
-      <div class="job">
+      <div class="job${isDismissed ? " dismissed" : ""}">
         <div>
           <p class="job-title"><a href="${j.url}" target="_blank" rel="noopener">${escapeHtml(j.title)}</a></p>
           <div class="job-company">${escapeHtml(j.company || "")}</div>
           <div class="job-alt"><a href="${altSearchUrl(j)}" target="_blank" rel="noopener">найти оригинал ↗</a></div>
         </div>
-        <div class="score">скор ${j.score}</div>
+        <div class="job-right">
+          <button class="job-x" data-key="${key}" title="${xTitle}">${xLabel}</button>
+          <div class="score">скор ${j.score}</div>
+        </div>
         <div class="job-meta">${tags.join("")}</div>
       </div>
     `;
@@ -345,6 +390,17 @@
       }
       render();
     });
+  });
+
+  // Клик по крестику — переключаем пометку "не подходит" и сохраняем локально
+  document.getElementById("jobs").addEventListener("click", (e) => {
+    const btn = e.target.closest(".job-x");
+    if (!btn) return;
+    const key = btn.dataset.key;
+    if (state.dismissed.has(key)) state.dismissed.delete(key);
+    else state.dismissed.add(key);
+    localStorage.setItem(DISMISS_KEY, JSON.stringify([...state.dismissed]));
+    render();
   });
 
   loadJobs();
