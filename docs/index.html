@@ -158,6 +158,12 @@
     font-family:'IBM Plex Mono', monospace;
     font-size:11px;
   }
+  .count{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:14px;
+  }
   .tag{
     padding:3px 9px;
     border-radius:20px;
@@ -203,6 +209,8 @@
     <option value="date">Сортировка: по дате публикации</option>
   </select>
 </div>
+
+<div class="count" id="count"></div>
 
 <main id="jobs">
   <div class="status">Загружаю вакансии…</div>
@@ -263,6 +271,13 @@
     } else {
       list.sort((a, b) => b.score - a.score);
     }
+
+    const countEl = document.getElementById("count");
+    const total = state.jobs.length;
+    countEl.textContent =
+      list.length === total
+        ? `Вакансий: ${total}`
+        : `Показано: ${list.length} из ${total}`;
 
     if (list.length === 0) {
       container.innerHTML = `<div class="status">Ничего не найдено под текущие фильтры.</div>`;
