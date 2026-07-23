@@ -72,9 +72,24 @@ async function main() {
     last_seen_at: nowIso, // отметка "видели в этом прогоне" — для очистки устаревших
   }));
 
+  // Сброс метки "новое": помечаем ВСЕ текущие вакансии как не-новые.
+  // Дальше upsert заново добавит только реально новые (которых ещё не было) —
+  // им проставится is_new=true (default из схемы при вставке), а уже
+  // существующие останутся false. Итог: "новое" = "появилось в этом прогоне".
+  const { error: resetError } = await supabase
+    .from("jobs")
+    .update({ is_new: false })
+    .eq("is_new", true);
+
+  if (resetError) {
+    console.error("Ошибка сброса пометки 'новое':", resetError.message);
+    process.exit(1);
+  }
+
   // upsert: если вакансия уже есть (source+source_id), обновляем данные
-  // (включая last_seen_at), но не трогаем is_new / first_seen_at — чтобы
-  // не сбрасывать пометку "новое"
+  // (включая last_seen_at), но НЕ передаём is_new / first_seen_at — поэтому
+  // у существующих вакансий is_new остаётся false (сброшен выше), а у впервые
+  // вставленных берётся default true из схемы
   const { error } = await supabase
     .from("jobs")
     .upsert(rows, { onConflict: "source,source_id", ignoreDuplicates: false });
