@@ -158,12 +158,45 @@
     font-family:'IBM Plex Mono', monospace;
     font-size:11px;
   }
+  .countbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:14px;
+  }
   .count{
     font-family:'IBM Plex Mono', monospace;
     font-size:12px;
     color:var(--muted);
-    margin-bottom:14px;
   }
+  .export-btn{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--muted);
+    background:transparent;
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:5px 12px;
+    cursor:pointer;
+  }
+  .export-btn:hover{ border-color:var(--pine); color:var(--pine); }
+  .job-note{
+    grid-column:1 / -1;
+    margin-top:8px;
+    width:100%;
+    box-sizing:border-box;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--ink);
+    background:transparent;
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:6px 10px;
+  }
+  .job-note::placeholder{ color:var(--muted); opacity:0.7; }
+  .job-note:focus{ outline:none; border-color:var(--pine); }
   .tag{
     padding:3px 9px;
     border-radius:20px;
@@ -231,7 +264,10 @@
   </select>
 </div>
 
-<div class="count" id="count"></div>
+<div class="countbar">
+  <span class="count" id="count"></span>
+  <button id="export-btn" class="export-btn">Скопировать пометки для анализа</button>
+</div>
 
 <main id="jobs">
   <div class="status">Загружаю вакансии…</div>
@@ -261,12 +297,14 @@
   // (localStorage) — база остаётся доступной лишь на чтение, поэтому пометки
   // не пишутся на сервер и видны только тебе.
   const DISMISS_KEY = "dismissedJobs";
+  const NOTES_KEY = "jobNotes";
   const state = {
     jobs: [],
     filters: new Set(),
     search: "",
     sort: "score",
     dismissed: new Set(JSON.parse(localStorage.getItem(DISMISS_KEY) || "[]")),
+    notes: JSON.parse(localStorage.getItem(NOTES_KEY) || "{}"),
   };
 
   // Стабильный ключ вакансии (source_id может быть числом, guid или даже URL)
@@ -337,6 +375,7 @@
     const isDismissed = state.dismissed.has(jobKey(j));
     const xTitle = isDismissed ? "Вернуть (подходит)" : "Отметить как не подходит";
     const xLabel = isDismissed ? "↩" : "✕";
+    const note = escapeHtml(state.notes[jobKey(j)] || "");
 
     return `
       <div class="job${isDismissed ? " dismissed" : ""}">
@@ -350,6 +389,7 @@
           <div class="score">скор ${j.score}</div>
         </div>
         <div class="job-meta">${tags.join("")}</div>
+        <input class="job-note" data-key="${key}" placeholder="заметка: что не так…" value="${note}" />
       </div>
     `;
   }
@@ -401,6 +441,41 @@
     else state.dismissed.add(key);
     localStorage.setItem(DISMISS_KEY, JSON.stringify([...state.dismissed]));
     render();
+  });
+
+  // Ввод заметки — сохраняем в localStorage, но НЕ ре-рендерим (иначе слетит
+  // фокус во время набора)
+  document.getElementById("jobs").addEventListener("input", (e) => {
+    const inp = e.target.closest(".job-note");
+    if (!inp) return;
+    const key = inp.dataset.key;
+    if (inp.value.trim()) state.notes[key] = inp.value;
+    else delete state.notes[key];
+    localStorage.setItem(NOTES_KEY, JSON.stringify(state.notes));
+  });
+
+  // Экспорт пометок: собираем все крестики и заметки в текст и копируем в буфер
+  document.getElementById("export-btn").addEventListener("click", () => {
+    const lines = [];
+    for (const j of state.jobs) {
+      const key = jobKey(j);
+      const dismissed = state.dismissed.has(key);
+      const note = state.notes[key];
+      if (!dismissed && !note) continue;
+      let line = `[${j.source}] ${j.title} | ${j.company || "—"} | ${j.location || "—"}`;
+      if (dismissed) line += " | НЕ ПОДХОДИТ";
+      if (note) line += ` | заметка: ${note}`;
+      lines.push(line);
+    }
+    const text = lines.length
+      ? lines.join("\n")
+      : "Пока нет ни крестиков, ни заметок.";
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById("export-btn");
+      const old = btn.textContent;
+      btn.textContent = `Скопировано: ${lines.length} ✓`;
+      setTimeout(() => (btn.textContent = old), 2500);
+    });
   });
 
   loadJobs();
